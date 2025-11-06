@@ -12,6 +12,8 @@ import { useEffect, type JSX } from 'react'
 import { useGLTF, useTexture } from '@react-three/drei'
 import type * as THREE from 'three'
 import useMacbookStore from '../../store'
+import { noChangeParts } from '../../constants'
+import { Color } from 'three'
 
 // Tambahkan tipe agar TS gak error
 type GLTFResult = {
@@ -29,12 +31,19 @@ export default function MacbookModel14(props: JSX.IntrinsicElements['group']) {
   const texture = useTexture('/screen.png')
 
   useEffect(() => {
+    if (!scene) return
     scene.traverse((child) => {
-      if(child.isMesh) {
-
+      // narrow the Object3D to a Mesh so TS recognizes .isMesh and .material
+      const mesh = child as unknown as THREE.Mesh
+      if (mesh.isMesh) {
+        if (!noChangeParts.includes(mesh.name)) {
+          const mat = mesh.material as THREE.Material & { color?: THREE.Color }
+          if (mat?.color) mat.color = new Color(color)
+        }
       }
     })
-  }, [color])
+  }, [color, scene])
+
   return (
     <group {...props} dispose={null}>
       <mesh geometry={nodes.Object_10.geometry} material={materials.PaletteMaterial001} rotation={[Math.PI / 2, 0, 0]} />

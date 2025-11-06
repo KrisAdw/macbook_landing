@@ -8,9 +8,12 @@ Source: https://sketchfab.com/3d-models/macbook-pro-m3-16-inch-2024-8e34fc2b3031
 Title: macbook pro M3 16 inch 2024
 */
 
-import type { JSX } from 'react'
+import { useEffect, type JSX } from 'react'
 import { useGLTF, useTexture } from '@react-three/drei'
 import type * as THREE from 'three'
+import useMacbookStore from '../../store'
+import { noChangeParts } from '../../constants'
+import { Color } from 'three'
 
 type GLTFResult = {
   nodes: Record<string, THREE.Mesh>
@@ -18,8 +21,25 @@ type GLTFResult = {
 }
 
 export default function MacbookModel16(props: JSX.IntrinsicElements['group']) {
-  const { nodes, materials } = useGLTF('/models/macbook-16-transformed.glb') as unknown as GLTFResult
-  const texture = useTexture('/screen.png') // optional: kalau nanti mau nambah layar kayak di model 14
+  const { color } = useMacbookStore() as { color: string }
+  const { scene, nodes, materials } = useGLTF('/models/macbook-14-transformed.glb') as unknown as GLTFResult & { scene: THREE.Group }
+
+
+  const texture = useTexture('/screen.png')
+
+  useEffect(() => {
+    if (!scene) return
+    scene.traverse((child) => {
+      // narrow the Object3D to a Mesh so TS recognizes .isMesh and .material
+      const mesh = child as unknown as THREE.Mesh
+      if (mesh.isMesh) {
+        if (!noChangeParts.includes(mesh.name)) {
+          const mat = mesh.material as THREE.Material & { color?: THREE.Color }
+          if (mat?.color) mat.color = new Color(color)
+        }
+      }
+    })
+  }, [color, scene])
 
   return (
     <group {...props} dispose={null}>
